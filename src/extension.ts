@@ -245,8 +245,41 @@ class KeilProject implements IView, KeilProjectInfo {
         this._event = new event.EventEmitter();
         this.uVsionFileInfo = <uVisonInfo>{};
         this.targetList = [];
-        this.vscodeDir = new File(_uvprjFile.dir + File.sep + '.vscode');
-        this.vscodeDir.CreateDir();
+        
+        /** 
+         * Don't create the .vscode dir in the dir where .uvprojx is located.
+         * Instead, find the corresponding .uvprojx file in the workspace settings 
+         * and create the .vscode in the root of its workspace folder.
+         */
+        //this.vscodeDir = new File(_uvprjFile.dir + File.sep + '.vscode');
+        
+        /* Find which of the .uvprojx projects from workspace settings is being initialized at the moment */
+        let projIdx = ResourceManager.getInstance().getProjectFileLocationList().indexOf(_uvprjFile.path);
+        
+        /* Check if workspace setting index is found */
+        if(projIdx == -1)
+        {
+            /* If not just create the .vscode in the same dir as .uvprojx */
+            this.vscodeDir = new File(_uvprjFile.path + File.sep + '.vscode');
+            this.vscodeDir.CreateDir();
+        }
+        else
+        {
+            /* Check if the current project is a workspace */
+            if(vscode.workspace.workspaceFolders !== undefined) {
+                
+                /* If yes, create the .vscode in the root of the workspace folder associated with the .uvprojx */
+                this.vscodeDir = new File( vscode.workspace.workspaceFolders[projIdx].uri.path.substring(1) + File.sep + '.vscode');
+                this.vscodeDir.CreateDir();
+            }
+            else
+            {
+                /* If not just create the .vscode in the same dir as .uvprojx */
+                this.vscodeDir = new File(_uvprjFile.path + File.sep + '.vscode');
+                this.vscodeDir.CreateDir();
+            }
+        }
+  
         const logPath = this.vscodeDir.path + File.sep + 'keil-assistant.log';
         this.logger = new console.Console(fs.createWriteStream(logPath, { flags: 'a+' }));
         this.uvprjFile = _uvprjFile;
@@ -258,11 +291,12 @@ class KeilProject implements IView, KeilProjectInfo {
         this.watcher.OnChanged = () => {
             if (this.prevUpdateTime === undefined ||
                 this.prevUpdateTime + 2000 < Date.now()) {
-                this.prevUpdateTime = Date.now(); // reset update time
-                setTimeout(() => this.onReload(), 300);
-            }
-        };
+                    this.prevUpdateTime = Date.now(); // reset update time
+                    setTimeout(() => this.onReload(), 300);
+                }
+            };
         this.watcher.Watch();
+
     }
 
     on(event: 'dataChanged', listener: () => void): void;
