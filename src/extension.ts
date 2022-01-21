@@ -1182,13 +1182,29 @@ class ProjectExplorer implements vscode.TreeDataProvider<IView> {
             const workspace = new File(wsFilePath);
             if (workspace.IsDir()) {
                 const excludeList = ResourceManager.getInstance().getProjectExcludeList();
-                const uvList = workspace.GetList([/\.uvproj[x]?$/i], File.EMPTY_FILTER).concat(ResourceManager.getInstance().getProjectFileLocationList())
-                    .filter((file) => { return !excludeList.includes(file.name); });
+                
+                /** 
+                 * List of .uvprojx files in workspace root.
+                 * Let's not use this as it doesn't suit our project layout.
+                 */
+                //let uvList = workspace.GetList([/\.uvproj[x]?$/i], File.EMPTY_FILTER).filter((file) => { return !excludeList.includes(file.name); });
+                let uvList: File[] = [];
+                
+                /* Get list of .uvprojx files from settings.json */
+                let uvListParam = ResourceManager.getInstance().getProjectFileLocationList();
+        
+                /* Convert path strings into File objects and add them to list of projects */
+                for(var i=0; i<uvListParam.length; i++)
+                {
+                    uvList.push(new File(uvListParam[i]));
+                }
+
                 for (const uvFile of uvList) {
                     try {
-                        await this.openProject(vscodeVariables(uvFile));
+                        vscode.window.showInformationMessage(`Keil - opening project: '${uvFile.path}'`);
+                        await this.openProject(uvFile.path);
                     } catch (error) {
-                        vscode.window.showErrorMessage(`open project: '${uvFile.name}' failed !, msg: ${(<Error>error).message}`);
+                        vscode.window.showErrorMessage(`Open project: '${uvFile.path}' failed !, msg: ${(<Error>error).message}`);
                     }
                 }
             }
