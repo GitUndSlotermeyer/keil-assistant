@@ -72,7 +72,30 @@ export class ResourceManager {
     }
 
     getProjectFileLocationList(): string[] {
-        return this.getAppConfig().get<string[]>('Project.FileLocationList') || [];
+        
+        /* If this is a workspace, prepend the workspace absolute path */
+        if(vscode.workspace.workspaceFolders !== undefined) {
+            //let workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath
+            let workspaceFilePath = vscode.workspace.workspaceFile?.fsPath.toString().replace(/\\[^\\]*\.code-workspace/, "");
+            let uvprojLocationList = this.getAppConfig().get<string[]>('Project.FileLocationList') || [];
+
+            /** 
+             * Prepend workspace folder to .uvprojx file locations.
+             * The end result is a list of strings containing the absolute paths to .uvprojx files
+             * It is assumed that the paths to .uvprojx files are given ar paths relative to
+             * .code-workspace file.
+             */
+            return uvprojLocationList.map(i => workspaceFilePath + '\\' + i);
+        }
+        else {
+            
+            /** 
+             * If it's not a workspace just return the relative path.
+             * Not sure if this is even needed / functional. Probably not.
+             */
+            return this.getAppConfig().get<string[]>('Project.FileLocationList') || [];
+        }
+        
     }
 
     getIconByName(name: string): string | undefined {
