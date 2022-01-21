@@ -5,7 +5,6 @@ import * as event from 'events';
 import * as fs from 'fs';
 import * as node_path from 'path';
 import * as child_process from 'child_process';
-import * as vscodeVariables from 'vscode-variables';
 
 import { File } from '../lib/node_utility/File';
 import { ResourceManager } from './ResourceManager';
